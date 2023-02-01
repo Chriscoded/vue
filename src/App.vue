@@ -30,7 +30,7 @@ import HelloWorld from './components/HelloWorld.vue'
 
 
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+
 // import {mapState} from 'vuex'
 
 // export default{
