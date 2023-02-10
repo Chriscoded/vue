@@ -1,53 +1,6 @@
 import { createStore } from "vuex";
 import axiosClient from "../axios";
 
-const tmtSurveys = [
-    {
-        id: 100,
-        title: "TheCodeholic Content",
-        slug: "thecodeholic-content",
-        status: "draft",
-        image: "https://pbs.twimg.com/profile_images/1118059535003017221/9ZwEYqj2_400X400.png",
-        description: "My name is Chris. <br> ! am a Web Developer with 3+ years of experience, free educational content",
-        created_at: "2023-2-1 18:00:00",
-        updated_at: "2023-2-1 18:00:00",
-        Expire_date: "2023-2-11 18:00:00",
-        questions: [
-            {
-                id: 1,
-                type: "select",
-                question: "From which country are you?",
-                description: null,
-                data: {
-                    options: [
-                        {uuid: "f8af96f2-1d80-4632-9e9e-b560670e52ea", text: "Nigeria"},
-                        {uuid: "201ciff5-23c9-42f9-bfb5-bbc850536440", text: "Georgia"},
-                        {uuid: "b5c09733-a49e-460a-ba8a-52789984e258", text: "Germany"},
-                        {uuid: "yim55646-g7g9-h850-4fu8-hhdf4r4u39xe", text: "India"},
-                        {uuid: "uhdk4542-4gh8-5jh6-3n5e-kj57834jnjnc", text: "United Kingdom"},
-                    ],
-                },
-            },
-
-            {
-                id: 2,
-                type: "checkbox",
-                question: "Which language videos do you want to see on my channel ?",
-                description: "Select the language you want my videos to be on",
-                data: {
-                    options: [
-                        {uuid: "f8af96f2-1d80-4632-9e9e-b560670e52ea", text: "Javascript"},
-                        {uuid: "201ciff5-23c9-42f9-bfb5-bbc850536440", text: "PHP"},
-                        {uuid: "b5c09733-a49e-460a-ba8a-52789984e258", text: "HTML + CSS"},
-                        {uuid: "yim55646-g7g9-h850-4fu8-hhdf4r4u39xe", text: "vue"},
-                        {uuid: "uhdk4542-4gh8-5jh6-3n5e-kj57834jnjnc", text: "Laravel"},
-                    ],
-                },
-            }
-        ],
-
-    }
-]
 
 const store = createStore( {
     state: {
@@ -61,10 +14,79 @@ const store = createStore( {
             },
             //LETS SAVE TOKEN TO SESSIONSTORAGE
             token: sessionStorage.getItem("TOKEN"),
+        },
+        currentSurvey: {
+            loading: false,
+            data: {}
+        },
+        surveys: {
+           loading: false,
+           links: [],
+           data: [] 
+        },
+        questionTypes: ["text", "select", "radio", "checkbox", "textarea"],
+        notification: {
+            show: false,
+            type: null,
+            message: null,
         }
     },
     getters: {},
     actions: {
+        getSurvey({ commit }, id) {
+            commit("setCurrentSurveyLoading", true);
+            return axiosClient
+              .get(`/survey/${id}`)
+              .then((res) => {
+                commit("setCurrentSurvey", res.data);
+                commit("setCurrentSurveyLoading", false);
+                return res;
+              })
+              .catch((err) => {
+                commit("setCurrentSurveyLoading", false);
+                throw err;
+              });
+          },
+
+        saveSurvey({commit}, survey){
+            //we don't want to send image url to backened
+            //since image has same content and image url is for display purposes
+            delete survey.image_url;
+            let response;
+
+            //if it has id that means we are updating survey
+            //so use put request
+            if(survey.id){
+                response = axiosClient
+                    .put(`/survey/${survey.id}`, survey)
+                    .then((res) => {
+                       //commit("updateSurvey", res.data);
+                        commit("setCurrentSurvey", res.data);
+                        return res;
+                    });
+            } else{
+                response = axiosClient.post("/survey", survey).then((res) => {
+                    //commit("saveSurvey", res.data);
+                    commit("setCurrentSurvey", res.data);
+                    return res;
+                });
+            }
+
+            return response;
+        },
+        deleteSurvey({}, id){
+            return axiosClient.delete(`/survey/${id}`);
+        },
+        getSurveys({commit}, {url = null} = {}){
+            url = url || '/survey'
+            commit('setSurveysLoading', true)
+            return axiosClient.get(url).then((res) => {
+                commit('setSurveysLoading', false)
+                commit("setSurveys", res.data)
+                return res;
+            });
+        },
+
         register({commit}, user){
             return axiosClient.post('/register', user)
             .then(({data}) =>{
@@ -91,6 +113,43 @@ const store = createStore( {
     },
     // purpose of mutation is to just change the state
     mutations: {
+        //set current surveyLoading state to true or false base on the value of parameter loading
+        setCurrentSurveyLoading: (state, loading) => {
+            state.currentSurvey.loading = loading;
+        },
+
+        //set all surveyLoading state to true or false base on the value of parameter loading
+        setSurveysLoading: (state, loading) => {
+            state.surveys.loading = loading;
+        },
+        //set current survey data based on the particular suvey passed to it
+        setCurrentSurvey: (state, survey) => {
+            state.currentSurvey.data = survey.data;
+        },
+
+        //set all surveys data based on the particular suvey passed to it
+        setSurveys: (state, surveys) => {
+            // debugger;
+            state.surveys.data = surveys.data;
+            state.surveys.links = surveys.meta.links;
+        },
+          
+        // saveSurvey: (state, survey) => {
+        //     //state.surveys is equal to the structurally existing survey and 
+        //     // and new survey data
+        //     state.surveys = [...state.surveys, survey.data];
+        // },
+
+        // updateSurvey: (state, survey) => {
+        //     state.surveys = state.surveys.map((s) => {
+        //         //if existing survey id equal received survey id
+        //         //then return the received survey id
+        //         if(s.id == survey.data.id){
+        //             return survey.data
+        //         }
+        //         return s;
+        //     });
+        // },
         logout: (state) => {
             state.user.data = {};
             state.user.token = null;
@@ -100,6 +159,14 @@ const store = createStore( {
             state.user.token = userData.token;
             state.user.data = userData.user;
             sessionStorage.setItem('TOKEN', userData.token);
+        },
+        notify: (state, {message, type}) => {
+            state.notification.show = true;
+            state.notification.type = type;
+            state.notification.message = message;
+            setTimeout(() => {
+                state.notification.show = false;
+            }, 5000)
         }
     },
     modules: {}

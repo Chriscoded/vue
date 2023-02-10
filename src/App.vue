@@ -28,7 +28,6 @@ import HelloWorld from './components/HelloWorld.vue'
 }
 </style> -->
 
-
 <script setup>
 
 // import {mapState} from 'vuex'
