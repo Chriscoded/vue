@@ -34,7 +34,7 @@
                     :key="survey.id" 
                     :survey="survey"
                     class="opacity-0 animate-fade-in-down"
-                    :style="{animationDelay: `${index * 0.2}s`}"
+                    :style="{animationDelay: `${index * 0.1}s`}"
                     @delete="deleteSurvey(survey)"
                 />
             </div>
@@ -49,7 +49,7 @@
             :key="i"
             :disabled="!link.url"
             href="#"
-            @click="getForPage(link)"
+            @click="getForPage($event, link)"
             aria-current="page"
             class="relative inline-flex items-center px-4 py-2 border text-sm font-medium whitespace-nowrap"
             :class="[
@@ -89,7 +89,8 @@
        
      }
 
-     function getForPage(link){
+     function getForPage(ev,link){
+        ev.preventDefault();
         //if link url does not exist or link is already active we don;t do anything
         if(!link.url || link.active){
             return;
